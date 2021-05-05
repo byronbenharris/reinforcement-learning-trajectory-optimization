@@ -188,7 +188,7 @@ NVALIDATE = 10
 
 lr = 0.001
 epsilon = 1.0
-epsilon_decay = 0.98
+epsilon_decay = 0.995
 gamma = 0.99
 
 ### MAIN ###
