@@ -1,9 +1,9 @@
 # This file trains a DQN model to solve a mission
 
 import os
-import pickle
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
+import _pickle as pkl
 
 from agents import DQN
 from rlenvs import (
@@ -17,23 +17,49 @@ from rlenvs import (
 class MissionAgent(DQN):
 
     """
+    The MissionAgent is the network which provides the actions for each state.
+    It inherits from agents.DQN which includes the core logic for a Deep-Q Network.
+    MissionAgent implements specialized training and validation methods for SolarMissions.
+
+    The Deep-Q Network needs the following:
+        env -- the environment to train the network on
+        lr -- the learning rate of the optimizer
+        gamma -- indicates how much the model should look at history
+        epsilon -- the randmoization factor for training
+        epsilon_decay -- the decay of epsilon as training progresses, range: (0,1)
+
+    `train` and `validate` are the outward facing methods of the class.
     """
 
     def __init__(self, env, lr, gamma, epsilon, epsilon_decay):
         super().__init__(env, lr, gamma, epsilon, epsilon_decay)
-        self.training_rewards = []
-        self.training_rewards_avg = []
+        self.step_count = []
+        self.min_dist = []
+        self.delta_v = []
+        self.rewards = []
+        self.rewards_avg = []
 
     def train(self, num_episodes, val_every, folder):
 
-        print("Beginning Training...")
+        """
+        `train` will run training on the model for ::num_episodes:: adjusting the weights
+        as dictated by the optimizer. Every ::val_every:: episodes will rendered as a plot
+        within ::folder::.
+
+        The model also tracks metrics as it goes. For each episode, it calculates
+        the number of steps the episode took, minimum distance the rocket got to the target,
+        thrust used, and reward.
+        """
+
+        print("\nBeginning Training...")
         for episode in range(num_episodes):
 
             self.env.reset()
             obs = self.env.observation()
             state = np.reshape(obs, [1, self.num_observation_space])
+            done = False
 
-            for step in range(self.env.nsteps):
+            while not done:
                 received_action = self.get_action(state)
                 next_state, reward, done, info = self.env.step(received_action)
                 next_state = np.reshape(next_state, [1, self.num_observation_space])
@@ -41,46 +67,74 @@ class MissionAgent(DQN):
                 state = next_state
                 self.update_counter()
                 self.learn_and_update_weights_by_reply()
-                if done: break
 
             if episode % val_every == 0:
                 self.env.render(title=f"Train Mission {episode}",
-                                file=f"{folder}/runs/train{episode}.png")
+                                file=f"{folder}/plots/train/{episode}.png")
 
-            reward = self.env.reward()
-            self.training_rewards.append(reward)
-            last_hundred = self.training_rewards
-            if len(self.training_rewards) > 100:
-                last_hundred = self.training_rewards[-100:]
-            self.training_rewards_avg.append(sum(last_hundred) / len(last_hundred))
+            self.step_count.append(self.env.mission.step_count)
+            self.min_dist.append(self.env.mission.min_dist)
+            self.delta_v.append(self.env.mission.rocket.total_dv)
+            self.rewards.append(self.env.reward())
+            if len(self.rewards) >= 100:
+                self.rewards_avg.append(np.mean(self.rewards[-100:]))
 
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
 
-            print(f"Episode {episode}\tSteps: {self.env.mission.step_count}\tMin Dist: {self.mission.min_dist}\tDelta V: {self.mission.rocket.total_dv}\tReward: {reward}\tEpsilon: {self.epsilon}")
+            print(f"Episode {episode}" +
+                  f"\tSteps: {self.env.mission.step_count}" +
+                  f"\tMin Dist: {self.env.mission.min_dist}" +
+                  f"\tDelta V: {self.env.mission.rocket.total_dv}" +
+                  f"\tReward: {reward}\tEpsilon: {self.epsilon}")
 
         print("Completed Training!")
 
-    def validate(self, folder, num_episodes=10):
-        print("Beginning Validation...")
+    def validate(self, folder, num_episodes):
+
+        """
+        `validate` tests the model on ::num_episodes:: and stores the results to
+        in ::folder::. This does NOT modify model weights.
+        """
+
+        print("\nBeginning Validation...")
         total_reward = 0.0
+
         for episode in range(num_episodes):
+
             self.env.reset()
             obs = self.env.observation()
-            for step in range(self.env.nsteps):
+            state = np.reshape(obs, [1, self.num_observation_space])
+            done = False
+
+            while not done:
                 action = self.get_action(state)
-                observation, reward, done, info = self.env.step(action)
-                if done: break
+                obs, reward, done, info = self.env.step(action)
+                state = np.reshape(obs, [1, self.num_observation_space])
+
             total_reward += self.env.reward()
+
             self.env.render(title=f"Validate Mission {episode}",
-                            file=f"{folder}/runs/validate{episode}.png")
-        print("\nCompleted Validation!")
+                            file=f"{folder}/plots/validate/{episode}.png")
+
+            print(f"Validate {episode}" +
+                  f"\tSteps: {self.env.mission.step_count}" +
+                  f"\tMin Dist: {self.env.mission.min_dist}" +
+                  f"\tDelta V: {self.env.mission.rocket.total_dv}" +
+                  f"\tReward: {self.env.reward()}")
+
         print(f"Average Reward: {total_reward/num_episodes}")
+        print("Completed Validation!")
+
+    def plot_metrics(self, folder):
+        self.plot_rewards(file=f"{folder}/metrics/training_reward.png")
+        self.plot_dists(file=f"{folder}/metrics/training_dist.png")
+        self.plot_deltav(file=f"{folder}/metrics/training_deltav.png")
 
     def plot_rewards(self, file=''):
         plt.figure(0); plt.clf()
-        plt.plot(self.source.xplot,self.source.yplot,'b-')
-        plt.plot(self.source.r[0],self.source.r[1],'o-')
+        plt.plot(self.rewards)
+        plt.plot(self.rewards_avg)
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.title("Training Rewards")
@@ -90,31 +144,85 @@ class MissionAgent(DQN):
         if file: plt.savefig(file)
         else: plt.show()
 
+    def plot_dists(self, file=''):
+        plt.figure(0); plt.clf()
+        plt.plot(self.min_dist)
+        plt.xlabel('Episode')
+        plt.ylabel('Distance (AU)')
+        plt.title("Training Distances")
+        plt.axis('tight')
+        plt.axis('equal')
+        plt.grid(True)
+        if file: plt.savefig(file)
+        else: plt.show()
 
-m = int(input("(1) ConstantSimple2D\n(2) RandomSimple2D\n(3) ConstantComplex2D\n(4) RandomComplex2D\nSelect Test Model: "))
+    def plot_deltav(self, file=''):
+        plt.figure(0); plt.clf()
+        plt.plot(self.delta_v)
+        plt.xlabel('Episode')
+        plt.ylabel('Delta V')
+        plt.title("Training Velocities")
+        plt.axis('tight')
+        plt.axis('equal')
+        plt.grid(True)
+        if file: plt.savefig(file)
+        else: plt.show()
+
+    def save_metrics(self, folder):
+        # save metrics to pickles for long-term storage
+        pkl.dump(self.step_count, open(f"{folder}/metrics/steps.pkl", "wb"))
+        pkl.dump(self.min_dist, open(f"{folder}/metrics/dists.pkl", "wb"))
+        pkl.dump(self.delta_v, open(f"{folder}/metrics/deltavs.pkl", "wb"))
+        pkl.dump(self.rewards, open(f"{folder}/metrics/rewards.pkl", "wb"))
+        pkl.dump(self.rewards_avg, open(f"{folder}/metrics/rewards_avg.pkl", "wb"))
+
+
+### HYPERPARAMETERS ###
+
+TAU = 0.001
+NSTEPS = 50000
+NPLANETS = 2
+NEPISODES = 250
+PLOT_EVERY = 25
+NVALIDATE = 10
+
+lr = 0.001
+epsilon = 1.0
+epsilon_decay = 0.98
+gamma = 0.99
+
+### MAIN ###
+
+m = int(input("(1) ConstantSimple2D\n" +
+              "(2) RandomSimple2D\n" +
+              "(3) ConstantComplex2D\n" +
+              "(4) RandomComplex2D\n" +
+              "Select Test Model: "))
 
 if (m == 1):
     folder = "../saved/ConstantSimple2D"
-    env = ConstantSimple2DMissionEnv()
+    env = ConstantSimple2DMissionEnv(TAU, NSTEPS)
 elif (m == 2):
     folder = "../saved/RandomSimple2D"
-    env = RandomSimple2DMissionEnv()
+    env = RandomSimple2DMissionEnv(TAU, NSTEPS)
 elif (m == 3):
     folder = "../saved/ConstantComplex2D"
-    env = ConstantComplex2DMissionEnv()
+    env = ConstantComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
 elif (m == 4):
     folder = "../saved/RandomComplex2D"
-    env = RandomComplex2DMissionEnv()
+    env = RandomComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
 else:
     print('invalid choice')
     sys.exit()
 
-pickle.dump(env.mission.state, open(f"{folder}/env.pkl", "wb"))
-lr = 0.001; epsilon = 1.0; epsilon_decay = 0.98; gamma = 0.99
+# save the env in a pickle
+pkl.dump(env, open(f"{folder}/env.pkl", "wb"))
+# create and train a model
 model = MissionAgent(env, lr, gamma, epsilon, epsilon_decay)
-model.train(100, 1, folder)
+model.train(NEPISODES, PLOT_EVERY, folder)
+# save all important model info
 model.save(f"{folder}/model.h5")
-model.plot_rewards(file=f"{folder}/training.pdf")
-pickle.dump(model.rewards, open(f"{folder}/rewards.pkl", "wb"))
-pickle.dump(model.rewards_avg, open(f"{folder}/rewards_avg.pkl", "wb"))
-self.validate(folder)
+model.plot_metrics(folder)
+model.save_metrics(folder)
+# see how well the model did
+model.validate(folder, NVALIDATE)

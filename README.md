@@ -10,15 +10,17 @@ The code is all contained within the `/code/` subdirectory. More specifically:
 `/code/rksolvers.py` contains all code implementing the Runga-Kutta solver,
 `/code/solar.py` implements classes for modeling the solar system and space missions,
 `/code/rlenvs.py` formalizes tensorflow environments (the language of reinforcement
-learning) using the solar classes, `/code/train.py` is a runnable script for training
+learning) using the solar classes, `/code/agents.py` implements the foundation
+ of Deep-Q Networks (it's adapted from [fakemonk1's lunar lander](github.com/fakemonk1/Reinforcement-Learning-Lunar_Lander/blob/master/Lunar_Lander.pybut) has some important changes to handle continuous
+action spaces), `/code/train.py` is a runnable script for training
 and saving models, and finally `/code/test.py` is another runnable script which
 tests fully-trained models to see how well they work.
 
-The `/models/` subdirectory contains fully trained models that have been saved
-for later use and `/plots/` contains images saved from training. `/resources/`
-contains the presentation materials for the project.
+The `/saved/` subdirectory contains the weights, training metrics, and plots for
+each model. `/resources/` contains the presentation materials for the project.
+`/archive/` contains miscellaneous deprecated materials.
 
-This was created as my final project for PHYS 416 at Rice University in Spring 2021.
+This was created as a final project for PHYS 416 at Rice University in Spring 2021.
 
 ## Installation
 
@@ -39,3 +41,7 @@ You only need to create the virtual and and download project dependencies once.
 This means if you want to edit the code or return to it at a later time, you
 can ignore steps 1 and 4 since the virtual env is already created and contains
 the necessary dependencies.
+
+## License
+
+This code is available for use as specified in the MIT License.

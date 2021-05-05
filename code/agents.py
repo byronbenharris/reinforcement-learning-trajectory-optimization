@@ -1,5 +1,5 @@
-
-# github.com/fakemonk1/Reinforcement-Learning-Lunar_Lander/blob/master/Lunar_Lander.py
+# This file provides implements a Deep Q-Network which serves as the parent for our mission agent
+# The code was modified from: github.com/fakemonk1/Reinforcement-Learning-Lunar_Lander/blob/master/Lunar_Lander.py
 
 import gym
 import numpy as np
@@ -18,10 +18,13 @@ import pickle
 from matplotlib import pyplot as plt
 
 
-class DDPG:
-    pass
-
 class DQN:
+
+    """
+    This class implements the foundation for a Deep-Q Network
+
+    `train` and `test` are abstract and must be initialized in inheritance
+    """
 
     def __init__(self, env, lr, gamma, epsilon, epsilon_decay):
 
@@ -44,9 +47,9 @@ class DQN:
 
     def initialize_model(self):
         model = Sequential()
-        model.add(Dense(256, input_dim=self.num_observation_space, activation=relu))
-        # model.add(Dense(512, input_dim=self.num_observation_space, activation=relu))
-        # model.add(Dense(256, activation=relu))
+        # model.add(Dense(256, input_dim=self.num_observation_space, activation=relu))
+        model.add(Dense(512, input_dim=self.num_observation_space, activation=relu))
+        model.add(Dense(256, activation=relu))
         model.add(Dense(self.num_action_space, activation=linear))
         model.compile(loss=mean_squared_error,optimizer=Adam(lr=self.lr))
         print(model.summary())
@@ -93,5 +96,8 @@ class DQN:
     def save(self, file):
         self.model.save(file)
 
-    # TODO: train()
-    # TODO: validate()
+    def train(self):
+        raise NotImplementedError
+
+    def validate(self):
+        raise NotImplementedError

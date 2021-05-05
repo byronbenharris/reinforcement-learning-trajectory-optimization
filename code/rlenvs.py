@@ -3,8 +3,8 @@
 import gym
 from gym import spaces
 
-import pickle
 import numpy as np
+import _pickle as pkl
 
 from solar import (
     CreateRandomSimpleHighThrustMission,
@@ -15,6 +15,7 @@ from solar import (
 class MissionEnv(gym.Env):
 
     def __init__(self, mission, nplanets, nsteps):
+        self.episode = 0
         self.nsteps = nsteps
         self.nplanets = nplanets
         self.mission = mission
@@ -33,13 +34,14 @@ class MissionEnv(gym.Env):
 
     def step(self, action):
         self.mission.step(action)
-        return self.mission.observation(), self.mission.reward(), self.mission.done(), {}
+        done = (self.mission.step_count > self.nsteps) or self.mission.done()
+        return self.mission.observation(), self.mission.reward(), done, {}
 
 
 class ConstantSimple2DMissionEnv(MissionEnv):
 
-    def __init__(self, nsteps=500):
-        mission = CreateRandomSimpleHighThrustMission(0.001)
+    def __init__(self, tau, nsteps):
+        mission = CreateRandomSimpleHighThrustMission(tau)
         super().__init__(mission, 0, nsteps)
 
     def reset(self):
@@ -48,18 +50,22 @@ class ConstantSimple2DMissionEnv(MissionEnv):
 
 class RandomSimple2DMissionEnv(MissionEnv):
 
-    def __init__(self, nsteps=500):
-        mission = CreateRandomSimpleHighThrustMission(0.001)
+    def __init__(self, tau, nsteps):
+        mission = CreateRandomSimpleHighThrustMission(tau)
         super().__init__(mission, 0, nsteps)
 
     def reset(self):
-        self.mission = CreateRandomSimpleHighThrustMission(0.001)
+        self.episode += 1
+        # only changes onces every 5 episodes to give model time to learn
+        if (self.episode % 5 != 0): self.mission.reset()
+        else: self.mission = CreateRandomSimpleHighThrustMission(self.mission.tau)
+
 
 
 class ConstantComplex2DMissionEnv(MissionEnv):
 
-    def __init__(self, nplanets, nsteps=500):
-        mission = CreateRandomComplexHighThrustMission(0.001, nplanets)
+    def __init__(self, tau, nplanets, nsteps):
+        mission = CreateRandomComplexHighThrustMission(tau, nplanets)
         super().__init__(mission, nplanets, nsteps)
 
     def reset(self):
@@ -68,14 +74,12 @@ class ConstantComplex2DMissionEnv(MissionEnv):
 
 class RandomComplex2DMissionEnv(MissionEnv):
 
-    def __init__(self, nplanets, nsteps=500):
-        mission = CreateRandomComplexHighThrustMission(0.001, nplanets)
+    def __init__(self, tau, nplanets, nsteps):
+        mission = CreateRandomComplexHighThrustMission(tau, nplanets)
         super().__init__(mission, nplanets, nsteps)
 
     def reset(self):
-        self.mission = CreateRandomComplexHighThrustMission(0.001, self.nplanets)
-
-
-def load_mission(file, type):
-    if type == 2: return CreateRandomSimpleHighThrustMission()
-    if type == 4: pass
+        self.episode += 1
+        # only changes onces every 5 episodes to give model time to learn
+        if (self.episode % 5 != 0): self.mission.reset()
+        else: self.mission = CreateRandomComplexHighThrustMission(self.mission.tau, self.nplanets)

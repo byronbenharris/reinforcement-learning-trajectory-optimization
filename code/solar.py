@@ -8,9 +8,11 @@ from rksolvers import rk4, planet_derivs, mission_derivs
 class Planet:
 
     """
+    The planet class contains all the core information and frequently used
+    methods. This is the base object that composes the SolarSystem and Missions.
     """
 
-    def __init__(self, r, v, mass, name):
+    def __init__(self, r, v, mass, name, eccentricity, aphelion, period):
         self.name = name
         self.mass = mass
         self.r = np.copy(r)
@@ -19,6 +21,9 @@ class Planet:
         self.v0 = np.copy(v)
         self.xplot = np.array([])
         self.yplot = np.array([])
+        self.eccentricity = eccentricity
+        self.aphelion = aphelion
+        self.period = period
 
     def update(self, r, v):
         self.r = np.copy(r)
@@ -26,9 +31,11 @@ class Planet:
         self.xplot = np.append(self.xplot,r[0])
         self.yplot = np.append(self.yplot,r[1])
 
-    def random_step(self, tau, period, GM=4*np.pi**2):
+    def random_step(self, tau, GM=4*np.pi**2):
+        # this moves the planet a random number of steps less than the period
+        # so that the planet will start at a random place in the orbit
         time = 0.0
-        steps = int(np.random.rand() * period / tau)
+        steps = int(np.random.rand() * self.period / tau)
         for _ in range(steps):
             state = np.array([self.mass,self.r[0],self.r[1],self.v[0],self.v[1]])
             state = rk4(state,time,tau,planet_derivs, GM=GM)
@@ -39,6 +46,7 @@ class Planet:
         self.v0 = np.copy(self.v)
 
     def reset(self):
+        # planet to loc and vel
         self.r = np.copy(self.r0)
         self.v = np.copy(self.v0)
         self.xplot = np.array([])
@@ -48,11 +56,18 @@ class Planet:
 class Rocket:
 
     """
+    The rocket class implements a High-Thrust Rocket. This means that the rocket
+    has no limitation of acceleration (ie. velocity is instantly implemented --
+    see `update`).
+
+    This change is critical to keep this problem from getting really really
+    complex really fast.
     """
 
     def __init__(self, r, v):
         self.name = "Rocket"
-        self.mass = 3.68e-28 # mass of Voyager 1 in AMU
+        # mass of Voyager 1 in AMU
+        self.mass = 3.68e-28
         self.r = np.copy(r)
         self.v = np.copy(v)
         self.r0 = np.copy(r)
@@ -64,30 +79,19 @@ class Rocket:
         self.tdvplot = np.array([0.0])
 
     def update(self, r, v, action):
+        # changes the loc and vel
         self.r = np.copy(r)
         self.v = np.copy(v) + action
         self.xplot = np.append(self.xplot,r[0])
         self.yplot = np.append(self.yplot,r[1])
+        # tracks the delta_vel component sum
         deltaV = np.linalg.norm(action)
         self.total_dv += deltaV
         self.dvplot = np.append(self.dvplot,deltaV)
         self.tdvplot = np.append(self.tdvplot,self.total_dv)
 
-    def plot(self, title='', file=''):
-        plt.figure(1); plt.clf()
-        plt.plot(self.dvplot,'.',label='delta')
-        plt.plot(self.tdvplot,'-',label='total')
-        plt.xlabel('Step Number')
-        plt.ylabel('dV (AU/yr)')
-        plt.legend()
-        plt.title(title)
-        plt.axis('tight')
-        plt.axis('equal')
-        plt.grid(True)
-        if file: plt.savefig(file)
-        else: plt.show()
-
     def reset(self):
+        # resets to rocket to the original state
         self.r = np.copy(self.r0)
         self.v = np.copy(self.v0)
         self.xplot = np.array(self.r[0])
@@ -98,6 +102,12 @@ class Rocket:
 
 
 class SolarSystem:
+
+    """
+    The solar system is composed of a list of planets with a sun (1 AMU)
+    stationary at the origin. This class is primarily used for testing step
+    methods (ie rka, rk4).
+    """
 
     def __init__(self, tau, planets, GM=4*np.pi**2):
         self.planets = planets
@@ -132,6 +142,9 @@ class SolarSystem:
 class SimpleHighThrustMission:
 
     """
+    The SimpleHighThrustMission is a class for managing tranjectory analysis for
+    a high thrust rocket. The rocket starts on planet `source` and aims to travel
+    to planet `target`.
     """
 
     def __init__(self, tau, source, target, rocket, GM=4*np.pi**2):
@@ -143,6 +156,7 @@ class SimpleHighThrustMission:
         self.target = target
         self.target_tolerance = 0.02
         self.min_dist = np.linalg.norm(rocket.r - target.r)
+        self.max_planet_dist = max(source.aphelion, target.aphelion)
         self.GM = GM
 
     def step(self, action):
@@ -156,7 +170,7 @@ class SimpleHighThrustMission:
         # checks if the rockets has gotten new min dist to target and update if so
         if np.linalg.norm(self.rocket.r - self.target.r) < self.min_dist:
             self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
-        self.time += self.tau; self.step_count += 1  # # update the step and time
+        self.time += self.tau; self.step_count += 1  # update the step and time
 
     def state(self):
         # create a state vector for the rocket and planets
@@ -170,8 +184,11 @@ class SimpleHighThrustMission:
         return [item for sublist in self.state() for item in sublist]
 
     def done(self):
-        if self.min_dist <= self.target_tolerance: return True
-        return False
+        # if the rocket has hit the target, done :)
+        if self.min_dist <= self.target_tolerance: self.min_dist = 0; return True
+        # if the rocket has gone at least two times farthest planet, done :(
+        if np.linalg.norm(self.rocket.r) > 2 * self.max_planet_dist: return True
+        return False # otherwise, keep going
 
     def plot_mission(self, title='', file=''):
         # Create graph of the trajectories of the planets
@@ -195,19 +212,11 @@ class SimpleHighThrustMission:
         if file: plt.savefig(file)
         else: plt.show()
 
-    def plot_rocket(self, title='', file=''):
-        self.rocket.plot(title=title, file=file)
-
-    def plot_reward(self, title='', file=""):
-        pass
-
-    def plot_all(self):
-        pass
-
     def reward(self):
-        return -self.min_dist-self.rocket.total_dv
+        return -1000*self.min_dist-self.rocket.total_dv
 
     def reset(self):
+        # resets mission to original state
         self.time = 0.0
         self.step_count = 0
         self.rocket.reset()
@@ -219,15 +228,18 @@ class SimpleHighThrustMission:
 class ComplexHighThrustMission(SimpleHighThrustMission):
 
     """
+    Basically the same as a SimpleHighThrustMission except that in addition to the
+    source and target their are an additional n planets in the system. Otherwise
+    works the same.
     """
 
     def __init__(self, tau, source, target, rocket, planets, GM=4*np.pi**2):
         super().__init__(tau, source, target, rocket, GM=GM)
         self.planets = planets
+        self.max_planet_dist = max(max(source.aphelion, target.aphelion),
+            max([p.aphelion for p in planets]))
 
     def step(self, action):
-        """
-        """
         # runs a 4th order runga-kutta to move the planets and the rocket
         new = rk4(self.state(), self.time, self.tau, mission_derivs, GM=self.GM)
         # updates the position and velocity of rocket (cost updates too), target, source, and planets
@@ -276,20 +288,27 @@ class ComplexHighThrustMission(SimpleHighThrustMission):
         else: plt.show()
 
     def reset(self):
+        # resets mission to original state
+        # super().reset()
+        self.time = 0.0
+        self.step_count = 0
         self.rocket.reset()
         self.source.reset()
         self.target.reset()
+        self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
         for p in self.planets:
             p.reset()
 
 
 def rotate_vector(r,theta):
+    # rotates vector `r` by `theta` radians
     newx = r[0]*np.cos(theta) - r[1]*np.sin(theta)
     newy = r[0]*np.sin(theta) + r[1]*np.cos(theta)
     return np.array([newx,newy])
 
 
 def CreateRandomPlanet(tau, minr, name=''):
+    # creates a new and completely random planet
     r0 = (np.random.rand() * (5 - minr)) + minr
     # mass must fall btwn approx those of jupyter and pluto in solar mass units
     min_mass = 6.75e-9; max_mass = 0.001
@@ -298,23 +317,26 @@ def CreateRandomPlanet(tau, minr, name=''):
     eccentricity = np.random.rand() * 0.85
     v0 = np.sqrt(4*(np.pi**2)*(1-eccentricity) / r0)
     period = (r0 / (1+eccentricity))**3
+    aphelion = r0*(1+eccentricity)
     # rotate the orbit a random angle
     angle = 2*np.pi*np.random.rand()
-    r = rotate_vector(np.array([r0, 0.]), angle)
+    r = rotate_vector(np.array([aphelion, 0.]), angle)
     v = rotate_vector(np.array([0., v0]), angle)
-    planet = Planet(r, v, mass, name)
+    planet = Planet(r, v, mass, name, eccentricity, aphelion, period)
     # move planet random number of steps so don't always start at aphelion
-    planet.random_step(tau,period)
+    planet.random_step(tau)
     return planet
 
 
 def CreateRandomSolarSystem(tau):
+    # creates a new and completely random solar system
     source = CreateRandomPlanet(tau, 0.5, name='Source')
     target = CreateRandomPlanet(tau, np.linalg.norm(source.r), name='Target')
     return SolarSystem(tau, [source, target])
 
 
 def CreateRandomSimpleHighThrustMission(tau):
+    # creates a new and completely random simple high thrust mission
     source = CreateRandomPlanet(tau, 0.5, name='Source')
     target = CreateRandomPlanet(tau, np.linalg.norm(source.r), name='Target')
     rocket = Rocket(source.r, source.v)
@@ -322,6 +344,7 @@ def CreateRandomSimpleHighThrustMission(tau):
 
 
 def CreateRandomComplexHighThrustMission(tau, num_planets):
+    # creates a new and completely random complex high thrust mission
     source = CreateRandomPlanet(tau, 0.5, name='Source')
     target = CreateRandomPlanet(tau, np.linalg.norm(source.r), name='Target')
     rocket = Rocket(source.r, source.v)
