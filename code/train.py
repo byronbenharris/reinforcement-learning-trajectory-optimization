@@ -35,6 +35,7 @@ class MissionAgent(DQN):
         super().__init__(env, lr, gamma, epsilon, epsilon_decay)
         self.step_count = []
         self.min_dist = []
+        self.final_dist = []
         self.delta_v = []
         self.rewards = []
         self.rewards_avg = []
@@ -74,6 +75,7 @@ class MissionAgent(DQN):
 
             self.step_count.append(self.env.mission.step_count)
             self.min_dist.append(self.env.mission.min_dist)
+            self.final_dist.append(self.env.mission.dist)
             self.delta_v.append(self.env.mission.rocket.total_dv)
             self.rewards.append(self.env.reward())
             if len(self.rewards) >= 100:
@@ -84,9 +86,11 @@ class MissionAgent(DQN):
 
             print(f"Episode {episode}" +
                   f"\tSteps: {self.env.mission.step_count}" +
-                  f"\tMin Dist: {self.env.mission.min_dist}" +
-                  f"\tDelta V: {self.env.mission.rocket.total_dv}" +
-                  f"\tReward: {reward}\tEpsilon: {self.epsilon}")
+                  f"\tFinal Dist: {self.env.mission.dist:.5f}" +
+                  f"\tMin Dist: {self.env.mission.min_dist:.5f}" +
+                  f"\tDelta V: {self.env.mission.rocket.total_dv:.5f}" +
+                  f"\tReward: {reward:.5f}" +
+                  f"\tEpsilon: {self.epsilon:.5f}")
 
         print("Completed Training!")
 
@@ -118,10 +122,11 @@ class MissionAgent(DQN):
                             file=f"{folder}/plots/validate/{episode}.png")
 
             print(f"Validate {episode}" +
-                  f"\tSteps: {self.env.mission.step_count}" +
-                  f"\tMin Dist: {self.env.mission.min_dist}" +
-                  f"\tDelta V: {self.env.mission.rocket.total_dv}" +
-                  f"\tReward: {self.env.reward()}")
+                  f"\tSteps: {self.env.mission.step_count:.5f}" +
+                  f"\tFinal Dist: {self.env.mission.dist:.5f}" +
+                  f"\tMin Dist: {self.env.mission.min_dist:.5f}" +
+                  f"\tDelta V: {self.env.mission.rocket.total_dv:.5f}" +
+                  f"\tReward: {self.env.reward():.5f}")
 
         print(f"Average Reward: {total_reward/num_episodes}")
         print("Completed Validation!")
@@ -147,6 +152,7 @@ class MissionAgent(DQN):
     def plot_dists(self, file=''):
         plt.figure(0); plt.clf()
         plt.plot(self.min_dist)
+        plt.plot(self.final_dist)
         plt.xlabel('Episode')
         plt.ylabel('Distance (AU)')
         plt.title("Training Distances")
@@ -171,7 +177,8 @@ class MissionAgent(DQN):
     def save_metrics(self, folder):
         # save metrics to pickles for long-term storage
         pkl.dump(self.step_count, open(f"{folder}/metrics/steps.pkl", "wb"))
-        pkl.dump(self.min_dist, open(f"{folder}/metrics/dists.pkl", "wb"))
+        pkl.dump(self.min_dist, open(f"{folder}/metrics/min_dists.pkl", "wb"))
+        pkl.dump(self.final_dist, open(f"{folder}/metrics/final_dists.pkl", "wb"))
         pkl.dump(self.delta_v, open(f"{folder}/metrics/deltavs.pkl", "wb"))
         pkl.dump(self.rewards, open(f"{folder}/metrics/rewards.pkl", "wb"))
         pkl.dump(self.rewards_avg, open(f"{folder}/metrics/rewards_avg.pkl", "wb"))
@@ -180,15 +187,15 @@ class MissionAgent(DQN):
 ### HYPERPARAMETERS ###
 
 TAU = 0.001
-NSTEPS = 50000
+NSTEPS = 5000
 NPLANETS = 2
-NEPISODES = 2500
-PLOT_EVERY = 50
-NVALIDATE = 25
+NEPISODES = 750
+PLOT_EVERY = 25
+NVALIDATE = 10
 
 lr = 0.001
 epsilon = 1.0
-epsilon_decay = 0.98
+epsilon_decay = 0.995
 gamma = 0.99
 
 ### MAIN ###
@@ -215,11 +222,21 @@ else:
     print('invalid choice')
     sys.exit()
 
+# make sure all important directories exist
+os.makedirs(f"{folder}/", exist_ok=True)
+os.makedirs(f"{folder}/metrics/", exist_ok=True)
+os.makedirs(f"{folder}/plots/", exist_ok=True)
+os.makedirs(f"{folder}/plots/train/", exist_ok=True)
+os.makedirs(f"{folder}/plots/test/", exist_ok=True)
+os.makedirs(f"{folder}/plots/validate/", exist_ok=True)
+
 # save the env in a pickle
 pkl.dump(env, open(f"{folder}/env.pkl", "wb"))
 # create and train a model
+# if you KeyboardInterrupt training, model will be saved
 model = MissionAgent(env, lr, gamma, epsilon, epsilon_decay)
-model.train(NEPISODES, PLOT_EVERY, folder)
+try: model.train(NEPISODES, PLOT_EVERY, folder)
+except KeyboardInterrupt: pass
 # save all important model info
 model.save(f"{folder}/model.h5")
 model.plot_metrics(folder)

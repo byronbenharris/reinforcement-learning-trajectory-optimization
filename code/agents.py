@@ -40,16 +40,16 @@ class DQN:
 
         self.replay_memory_buffer = deque(maxlen=500000)
         self.batch_size = 64
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.1
         self.num_action_space = env.action_space.shape[0]
         self.num_observation_space = env.observation_space.shape[0]
         self.model = self.initialize_model()
 
     def initialize_model(self):
         model = Sequential()
-        # model.add(Dense(256, input_dim=self.num_observation_space, activation=relu))
-        model.add(Dense(512, input_dim=self.num_observation_space, activation=relu))
-        model.add(Dense(256, activation=relu))
+        model.add(Dense(256, input_dim=self.num_observation_space, activation=relu))
+        # model.add(Dense(512, input_dim=self.num_observation_space, activation=relu))
+        model.add(Dense(512, activation=relu))
         model.add(Dense(self.num_action_space, activation=linear))
         model.compile(loss=mean_squared_error,optimizer=Adam(lr=self.lr))
         print(model.summary())

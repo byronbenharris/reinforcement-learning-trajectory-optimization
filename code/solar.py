@@ -155,7 +155,8 @@ class SimpleHighThrustMission:
         self.source = source
         self.target = target
         self.target_tolerance = 0.02
-        self.min_dist = np.linalg.norm(rocket.r - target.r)
+        self.dist = np.linalg.norm(rocket.r - target.r)
+        self.min_dist = self.dist
         self.max_planet_dist = max(source.aphelion, target.aphelion)
         self.GM = GM
 
@@ -167,9 +168,9 @@ class SimpleHighThrustMission:
         self.rocket.update(np.array([new[0][1], new[0][2]]), np.array([new[0][3], new[0][4]]), action)
         self.source.update(np.array([new[1][1], new[1][2]]), np.array([new[1][3], new[1][4]]))
         self.target.update(np.array([new[2][1], new[2][2]]), np.array([new[2][3], new[2][4]]))
+        self.dist = np.linalg.norm(self.rocket.r - self.target.r)
         # checks if the rockets has gotten new min dist to target and update if so
-        if np.linalg.norm(self.rocket.r - self.target.r) < self.min_dist:
-            self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
+        if self.dist < self.min_dist: self.min_dist = self.dist
         self.time += self.tau; self.step_count += 1  # update the step and time
 
     def state(self):
@@ -185,7 +186,7 @@ class SimpleHighThrustMission:
 
     def done(self):
         # if the rocket has hit the target, done :)
-        if self.min_dist <= self.target_tolerance: self.min_dist = 0; return True
+        if self.dist <= self.target_tolerance: self.dist = 0; return True
         # if the rocket has gone at least two times farthest planet, done :(
         if np.linalg.norm(self.rocket.r) > 3*self.max_planet_dist: return True
         return False # otherwise, keep going
@@ -213,7 +214,7 @@ class SimpleHighThrustMission:
         else: plt.show()
 
     def reward(self):
-        return -1000*self.min_dist-self.rocket.total_dv
+        return -1000*self.dist - self.rocket.total_dv
 
     def reset(self):
         # resets mission to original state
@@ -222,7 +223,8 @@ class SimpleHighThrustMission:
         self.rocket.reset()
         self.source.reset()
         self.target.reset()
-        self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
+        self.dist = np.linalg.norm(self.rocket.r - self.target.r)
+        self.min_dist = self.dist
 
 
 class ComplexHighThrustMission(SimpleHighThrustMission):
@@ -248,9 +250,9 @@ class ComplexHighThrustMission(SimpleHighThrustMission):
         self.target.update(np.array([new[2][1], new[2][2]]), np.array([new[2][3], new[2][4]]))
         for i,p in enumerate(self.planets):
             p.update(np.array([new[i+3][1], new[i+3][2]]), np.array([new[i+3][3], new[i+3][4]]))
+        self.dist = np.linalg.norm(self.rocket.r - self.target.r)
         # checks if the rockets has gotten new min dist to target and update if so
-        if np.linalg.norm(self.rocket.r - self.target.r) < self.min_dist:
-            self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
+        if self.dist < self.min_dist: self.min_dist = self.dist
         self.time += self.tau; self.step_count += 1  # # update the step and time
 
     def state(self):
@@ -295,7 +297,8 @@ class ComplexHighThrustMission(SimpleHighThrustMission):
         self.rocket.reset()
         self.source.reset()
         self.target.reset()
-        self.min_dist = np.linalg.norm(self.rocket.r - self.target.r)
+        self.dist = np.linalg.norm(self.rocket.r - self.target.r)
+        self.min_dist = self.dist
         for p in self.planets:
             p.reset()
 
