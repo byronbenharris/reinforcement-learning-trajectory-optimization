@@ -187,7 +187,7 @@ class SimpleHighThrustMission:
         # if the rocket has hit the target, done :)
         if self.min_dist <= self.target_tolerance: self.min_dist = 0; return True
         # if the rocket has gone at least two times farthest planet, done :(
-        if np.linalg.norm(self.rocket.r) > 2 * self.max_planet_dist: return True
+        if np.linalg.norm(self.rocket.r) > 3*self.max_planet_dist: return True
         return False # otherwise, keep going
 
     def plot_mission(self, title='', file=''):
