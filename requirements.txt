@@ -1,7 +1,6 @@
 numpy==1.19.2
 matplotlib
-#tensorflow
-#tf-agents
+tensorflow
 Pillow==7.2.0
 gym
 keras
