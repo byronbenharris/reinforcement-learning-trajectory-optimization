@@ -189,7 +189,7 @@ class MissionAgent(DQN):
 TAU = 0.001
 NSTEPS = 10000
 NPLANETS = 2
-NEPISODES = 1500
+NEPISODES = 2500
 PLOT_EVERY = 25
 NVALIDATE = 10
 
@@ -246,3 +246,5 @@ model.plot_metrics(folder)
 model.save_metrics(folder)
 # see how well the model did
 model.validate(folder, NVALIDATE)
+
+# ip-172-31-1-98 -- lr = 0.001
