@@ -187,13 +187,13 @@ class MissionAgent(DQN):
 ### HYPERPARAMETERS ###
 
 TAU = 0.001
-NSTEPS = 5000
+NSTEPS = 10000
 NPLANETS = 2
 NEPISODES = 1500
 PLOT_EVERY = 25
 NVALIDATE = 10
 
-lr = 0.001
+# lr = 0.001
 epsilon = 1.0
 epsilon_decay = 0.995
 gamma = 0.99
@@ -221,6 +221,9 @@ elif (m == 4):
 else:
     print('invalid choice')
     sys.exit()
+
+lr = float(input("Set Learning Rate: "))
+folder += f"_lr={lr}_m=512-256"
 
 # make sure all important directories exist
 os.makedirs(f"{folder}/", exist_ok=True)
