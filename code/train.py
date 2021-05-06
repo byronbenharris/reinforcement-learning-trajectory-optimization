@@ -144,7 +144,6 @@ class MissionAgent(DQN):
         plt.ylabel('Reward')
         plt.title("Training Rewards")
         plt.axis('tight')
-        plt.axis('equal')
         plt.grid(True)
         if file: plt.savefig(file)
         else: plt.show()
@@ -157,7 +156,6 @@ class MissionAgent(DQN):
         plt.ylabel('Distance (AU)')
         plt.title("Training Distances")
         plt.axis('tight')
-        plt.axis('equal')
         plt.grid(True)
         if file: plt.savefig(file)
         else: plt.show()
@@ -169,7 +167,6 @@ class MissionAgent(DQN):
         plt.ylabel('Delta V')
         plt.title("Training Velocities")
         plt.axis('tight')
-        plt.axis('equal')
         plt.grid(True)
         if file: plt.savefig(file)
         else: plt.show()
@@ -223,7 +220,8 @@ else:
     sys.exit()
 
 lr = float(input("Set Learning Rate: "))
-folder += f"_lr={lr}_m=512-256"
+c = input("Custom Run Marker: ")
+folder += f"_lr={lr}_m=512-256_{c}"
 
 # make sure all important directories exist
 os.makedirs(f"{folder}/", exist_ok=True)
@@ -247,4 +245,7 @@ model.save_metrics(folder)
 # see how well the model did
 model.validate(folder, NVALIDATE)
 
-# ip-172-31-1-98 -- lr = 0.001
+# local -- lr = 0.0001
+# ip-172-31-1-98 -- 0.001
+# ip-172-31-9-204 -- 0.01
+# ip-172-31-2-23 -- 0.1

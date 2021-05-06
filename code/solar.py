@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rksolvers import rk4, planet_derivs, mission_derivs
 
+# Random num generator for all solar classes
+RNG = np.random.default_rng(42)
 
 class Planet:
 
@@ -35,7 +37,7 @@ class Planet:
         # this moves the planet a random number of steps less than the period
         # so that the planet will start at a random place in the orbit
         time = 0.0
-        steps = int(np.random.rand() * self.period / tau)
+        steps = int(RNG.random() * self.period / tau)
         for _ in range(steps):
             state = np.array([self.mass,self.r[0],self.r[1],self.v[0],self.v[1]])
             state = rk4(state,time,tau,planet_derivs, GM=GM)
@@ -312,17 +314,17 @@ def rotate_vector(r,theta):
 
 def CreateRandomPlanet(tau, minr, name=''):
     # creates a new and completely random planet
-    r0 = (np.random.rand() * (5 - minr)) + minr
+    r0 = (RNG.random() * (5 - minr)) + minr
     # mass must fall btwn approx those of jupyter and pluto in solar mass units
     min_mass = 6.75e-9; max_mass = 0.001
-    mass = (np.random.rand() * (max_mass-min_mass)) + min_mass
+    mass = (RNG.random() * (max_mass-min_mass)) + min_mass
     # velocity at the aphelion is given by: v = sqrt(GM/a*(1-e)/(1+e))
-    eccentricity = np.random.rand() * 0.85
+    eccentricity = RNG.random() * 0.85
     v0 = np.sqrt(4*(np.pi**2)*(1-eccentricity) / r0)
     period = (r0 / (1+eccentricity))**3
     aphelion = r0*(1+eccentricity)
     # rotate the orbit a random angle
-    angle = 2*np.pi*np.random.rand()
+    angle = 2*np.pi*RNG.random()
     r = rotate_vector(np.array([aphelion, 0.]), angle)
     v = rotate_vector(np.array([0., v0]), angle)
     planet = Planet(r, v, mass, name, eccentricity, aphelion, period)
