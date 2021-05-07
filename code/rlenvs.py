@@ -19,9 +19,9 @@ class MissionEnv(gym.Env):
         self.nsteps = nsteps
         self.nplanets = nplanets
         self.mission = mission
-        self.action_space = spaces.Box(-7.5, +7.5, (2,), dtype=np.float32)
-        self.observation_space = spaces.Box(-np.inf, np.inf,
-            shape=(15+(5*nplanets),), dtype=np.float32)
+        # self.action_space = spaces.Discrete(17)
+        # self.action_space = spaces.Box(-np.inf, np.inf, (2,), dtype=np.float32)
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(15+(5*nplanets),), dtype=np.float32)
 
     def observation(self):
         return self.mission.observation()

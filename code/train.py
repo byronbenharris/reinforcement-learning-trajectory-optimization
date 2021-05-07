@@ -113,6 +113,7 @@ class MissionAgent(DQN):
 
             while not done:
                 action = self.get_action(state)
+                print(f"\t{action}")
                 obs, reward, done, info = self.env.step(action)
                 state = np.reshape(obs, [1, self.num_observation_space])
 
@@ -122,7 +123,7 @@ class MissionAgent(DQN):
                             file=f"{folder}/plots/validate/{episode}.png")
 
             print(f"Validate {episode}" +
-                  f"\tSteps: {self.env.mission.step_count:.5f}" +
+                  f"\tSteps: {self.env.mission.step_count}" +
                   f"\tFinal Dist: {self.env.mission.dist:.5f}" +
                   f"\tMin Dist: {self.env.mission.min_dist:.5f}" +
                   f"\tDelta V: {self.env.mission.rocket.total_dv:.5f}" +
@@ -184,16 +185,16 @@ class MissionAgent(DQN):
 ### HYPERPARAMETERS ###
 
 TAU = 0.001
-NSTEPS = 10000
+NSTEPS = 1000
 NPLANETS = 2
-NEPISODES = 2500
-PLOT_EVERY = 25
+NEPISODES = 1
+PLOT_EVERY = 5
 NVALIDATE = 10
 
 # lr = 0.001
 epsilon = 1.0
-epsilon_decay = 0.995
-gamma = 0.99
+epsilon_decay = 0.999
+gamma = 0.5
 
 ### MAIN ###
 

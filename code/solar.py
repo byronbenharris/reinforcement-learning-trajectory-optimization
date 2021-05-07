@@ -156,8 +156,9 @@ class SimpleHighThrustMission:
         self.rocket = rocket
         self.source = source
         self.target = target
-        self.target_tolerance = 0.02
+        self.target_tolerance = 0.01
         self.dist = np.linalg.norm(rocket.r - target.r)
+        self.dist0 = np.linalg.norm(rocket.r - target.r)
         self.min_dist = self.dist
         self.max_planet_dist = max(source.aphelion, target.aphelion)
         self.GM = GM
@@ -190,7 +191,7 @@ class SimpleHighThrustMission:
         # if the rocket has hit the target, done :)
         if self.dist <= self.target_tolerance: self.dist = 0; return True
         # if the rocket has gone at least two times farthest planet, done :(
-        if np.linalg.norm(self.rocket.r) > 3*self.max_planet_dist: return True
+        # if np.linalg.norm(self.rocket.r) > 3*self.max_planet_dist: return True
         return False # otherwise, keep going
 
     def plot_mission(self, title='', file=''):
@@ -216,7 +217,7 @@ class SimpleHighThrustMission:
         else: plt.show()
 
     def reward(self):
-        return -1000*self.dist - self.rocket.total_dv
+        return 1.0 - self.dist/self.dist0
 
     def reset(self):
         # resets mission to original state
