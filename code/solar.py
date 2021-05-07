@@ -151,7 +151,7 @@ class SimpleHighThrustMission:
     to planet `target`.
     """
 
-    def __init__(self, tau, source, target, rocket):
+    def __init__(self, tau, source, target, rocket, sun_mass=1):
         self.tau = tau
         self.time = 0.0
         self.step_count = 0
@@ -163,7 +163,7 @@ class SimpleHighThrustMission:
         self.dist0 = np.linalg.norm(rocket.r - target.r)
         self.min_dist = self.dist
         self.max_planet_dist = max(source.aphelion, target.aphelion)
-        self.sun_mass = 1
+        self.sun_mass = sun_mass
 
     def step(self, action):
         # self.rocket.boost(action) # implement instaneous change in velocity
