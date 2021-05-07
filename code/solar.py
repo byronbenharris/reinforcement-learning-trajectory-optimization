@@ -219,7 +219,7 @@ class SimpleHighThrustMission:
         else: plt.show()
 
     def reward(self):
-        return 1000*(1-(self.dist/self.dist0)) - self.rocket.dv_sum
+        return 10000*(1-(self.dist/self.dist0)) - self.rocket.dv_sum
 
     def reset(self):
         # resets mission to original state
