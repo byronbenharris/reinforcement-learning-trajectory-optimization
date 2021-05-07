@@ -49,11 +49,10 @@ class DQN:
         print(model.summary())
         return model
 
-    def get_action(self, obs):
-        if np.random.rand() < self.epsilon:
+    def get_action(self, obs, test=False):
+        if np.random.rand() < self.epsilon and not test:
             return np.random.randint(0, 17)
-        predicted_actions = self.model.predict(obs)
-        return np.argmax(predicted_actions[0])
+        return np.argmax(self.model.predict(obs)[0])
 
     def add_to_replay_memory(self, state, action, reward, next_state, done):
         self.replay_memory_buffer.append((state, action, reward, next_state, done))
