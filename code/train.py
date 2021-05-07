@@ -86,11 +86,11 @@ class MissionAgent(DQN):
 
             print(f"Episode {episode}" +
                   f"\tSteps: {self.env.mission.step_count}" +
-                  f"\tFinal Dist: {self.env.mission.dist:.5f}" +
-                  f"\tMin Dist: {self.env.mission.min_dist:.5f}" +
-                  f"\tDelta V: {self.env.mission.rocket.total_dv:.5f}" +
-                  f"\tReward: {reward:.5f}" +
-                  f"\tEpsilon: {self.epsilon:.5f}")
+                  f"\tFinal Dist: {self.env.mission.dist:.3f}" +
+                  f"\tMin Dist: {self.env.mission.min_dist:.3f}" +
+                  f"\tDelta V: {self.env.mission.rocket.dv_sum:.3f}" +
+                  f"\tReward: {reward:.3f}" +
+                  f"\tEpsilon: {self.epsilon:.3f}")
 
         print("Completed Training!")
 
@@ -113,7 +113,6 @@ class MissionAgent(DQN):
 
             while not done:
                 action = self.get_action(state)
-                print(f"\t{action}")
                 obs, reward, done, info = self.env.step(action)
                 state = np.reshape(obs, [1, self.num_observation_space])
 
@@ -124,10 +123,10 @@ class MissionAgent(DQN):
 
             print(f"Validate {episode}" +
                   f"\tSteps: {self.env.mission.step_count}" +
-                  f"\tFinal Dist: {self.env.mission.dist:.5f}" +
-                  f"\tMin Dist: {self.env.mission.min_dist:.5f}" +
-                  f"\tDelta V: {self.env.mission.rocket.total_dv:.5f}" +
-                  f"\tReward: {self.env.reward():.5f}")
+                  f"\tFinal Dist: {self.env.mission.dist:.3f}" +
+                  f"\tMin Dist: {self.env.mission.min_dist:.3f}" +
+                  f"\tDelta V: {self.env.mission.rocket.dv_sum:.3f}" +
+                  f"\tReward: {self.env.reward():.3f}")
 
         print(f"Average Reward: {total_reward/num_episodes}")
         print("Completed Validation!")
@@ -185,15 +184,14 @@ class MissionAgent(DQN):
 ### HYPERPARAMETERS ###
 
 TAU = 0.001
-NSTEPS = 1000
+NSTEPS = 5000
 NPLANETS = 2
-NEPISODES = 1
-PLOT_EVERY = 5
+NEPISODES = 2500
+PLOT_EVERY = 1
 NVALIDATE = 10
 
-# lr = 0.001
+lr = 0.001
 epsilon = 1.0
-epsilon_decay = 0.999
 gamma = 0.5
 
 ### MAIN ###
@@ -207,22 +205,26 @@ m = int(input("(1) ConstantSimple2D\n" +
 if (m == 1):
     folder = "../saved/ConstantSimple2D"
     env = ConstantSimple2DMissionEnv(TAU, NSTEPS)
+    epsilon_decay = 0.99
 elif (m == 2):
     folder = "../saved/RandomSimple2D"
     env = RandomSimple2DMissionEnv(TAU, NSTEPS)
+    epsilon_decay = 0.999
 elif (m == 3):
     folder = "../saved/ConstantComplex2D"
     env = ConstantComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
+    epsilon_decay = 0.99
 elif (m == 4):
     folder = "../saved/RandomComplex2D"
     env = RandomComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
+    epsilon_decay = 0.999
 else:
     print('invalid choice')
     sys.exit()
 
-lr = float(input("Set Learning Rate: "))
+# lr = float(input("Set Learning Rate: "))
 c = input("Custom Run Marker: ")
-folder += f"_lr={lr}_m=512-256_{c}"
+folder += f"_lr={lr}_m=64_{c}"
 
 # make sure all important directories exist
 os.makedirs(f"{folder}/", exist_ok=True)
@@ -235,7 +237,8 @@ os.makedirs(f"{folder}/plots/validate/", exist_ok=True)
 # save the env in a pickle
 pkl.dump(env, open(f"{folder}/env.pkl", "wb"))
 # create and train a model
-# if you KeyboardInterrupt training, model will be saved
+# if you KeyboardInterrupt when ready to quit training
+# model will still be saved
 model = MissionAgent(env, lr, gamma, epsilon, epsilon_decay)
 try: model.train(NEPISODES, PLOT_EVERY, folder)
 except KeyboardInterrupt: pass
@@ -245,8 +248,3 @@ model.plot_metrics(folder)
 model.save_metrics(folder)
 # see how well the model did
 model.validate(folder, NVALIDATE)
-
-# local -- lr = 0.0001
-# ip-172-31-1-98 -- 0.001
-# ip-172-31-9-204 -- 0.01
-# ip-172-31-2-23 -- 0.1

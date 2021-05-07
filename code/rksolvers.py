@@ -87,9 +87,9 @@ def planet_derivs(s,t,**kwargs):
     Output
         deriv  Derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
     """
-    GM = kwargs['GM']
+    sun_mass = kwargs['sun_mass']
     r = np.array([s[1], s[2]]); v = np.array([s[3] ,s[4]])
-    accel = -GM*r/np.linalg.norm(r)**3 # accel from sun
+    accel = -4*np.pi**2*sun_mass*r/np.linalg.norm(r)**3 # accel from sun
     return np.array([s[0], v[0], v[1], accel[0], accel[1]])
 
 def mission_derivs(s,t,**kwargs):
@@ -101,13 +101,13 @@ def mission_derivs(s,t,**kwargs):
     Output
         deriv  Derivatives [[dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]...]
     """
-    GM = kwargs['GM']; new_s = []
+    sun_mass = kwargs['sun_mass']; new_s = []
     for i, si in enumerate(s):
         r = np.array([si[1], si[2]]); v = np.array([si[3], si[4]])
-        accel = -GM*r/np.linalg.norm(r)**3 # accel from the sun
+        accel = -4*np.pi**2*sun_mass*r/np.linalg.norm(r)**3 # accel from the sun
         for j, sj in enumerate(s): # accel from the other bodies
             rdiff = r - np.array([sj[1], sj[2]])
             if np.linalg.norm(rdiff) != 0.0:
-                accel += -GM*sj[0]*rdiff/np.linalg.norm(rdiff)**3
+                accel += -4*np.pi**2*sj[0]*rdiff/np.linalg.norm(rdiff)**3
         new_s.append([si[0], v[0], v[1], accel[0], accel[1]])
     return np.array(new_s)

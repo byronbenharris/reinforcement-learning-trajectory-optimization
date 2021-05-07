@@ -15,12 +15,11 @@ from solar import (
 class MissionEnv(gym.Env):
 
     def __init__(self, mission, nplanets, nsteps):
-        self.episode = 0
+        # self.episode = 0
         self.nsteps = nsteps
         self.nplanets = nplanets
         self.mission = mission
-        # self.action_space = spaces.Discrete(17)
-        # self.action_space = spaces.Box(-np.inf, np.inf, (2,), dtype=np.float32)
+        self.action_space = spaces.Discrete(17)
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(15+(5*nplanets),), dtype=np.float32)
 
     def observation(self):
@@ -55,10 +54,10 @@ class RandomSimple2DMissionEnv(MissionEnv):
         super().__init__(mission, 0, nsteps)
 
     def reset(self):
-        self.episode += 1
-        # only changes onces every 5 episodes to give model time to learn
-        if (self.episode % 5 != 0): self.mission.reset()
-        else: self.mission = CreateRandomSimpleHighThrustMission(self.mission.tau)
+        # self.episode += 1 # only changes onces every 5 episodes to give model time to learn
+        # if (self.episode % 5 != 0): self.mission.reset()
+        # else: self.mission = CreateRandomSimpleHighThrustMission(self.mission.tau)
+        self.mission = CreateRandomSimpleHighThrustMission(self.mission.tau)
 
 
 
@@ -79,7 +78,7 @@ class RandomComplex2DMissionEnv(MissionEnv):
         super().__init__(mission, nplanets, nsteps)
 
     def reset(self):
-        self.episode += 1
-        # only changes onces every 5 episodes to give model time to learn
-        if (self.episode % 5 != 0): self.mission.reset()
-        else: self.mission = CreateRandomComplexHighThrustMission(self.mission.tau, self.nplanets)
+        # self.episode += 1 # only changes once every 5 episodes to give model time to learn
+        # if (self.episode % 5 != 0): self.mission.reset()
+        # else: self.mission = CreateRandomComplexHighThrustMission(self.mission.tau, self.nplanets)
+        self.mission = CreateRandomComplexHighThrustMission(self.mission.tau, self.nplanets)
