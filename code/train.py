@@ -192,6 +192,7 @@ NVALIDATE = 25
 
 lr = 0.001
 epsilon = 1.0
+epsilon_decay = 0.999
 gamma = 0.5
 
 ### MAIN ###
@@ -205,19 +206,15 @@ m = int(input("(1) ConstantSimple2D\n" +
 if (m == 1):
     folder = "../saved/ConstantSimple2D"
     env = ConstantSimple2DMissionEnv(TAU, NSTEPS)
-    epsilon_decay = 0.99
 elif (m == 2):
     folder = "../saved/RandomSimple2D"
     env = RandomSimple2DMissionEnv(TAU, NSTEPS)
-    epsilon_decay = 0.999
 elif (m == 3):
     folder = "../saved/ConstantComplex2D"
     env = ConstantComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
-    epsilon_decay = 0.99
 elif (m == 4):
     folder = "../saved/RandomComplex2D"
     env = RandomComplex2DMissionEnv(TAU, NPLANETS, NSTEPS)
-    epsilon_decay = 0.999
 else:
     print('invalid choice')
     sys.exit()
