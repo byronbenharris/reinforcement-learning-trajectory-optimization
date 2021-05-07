@@ -76,7 +76,7 @@ class MissionAgent(DQN):
             self.step_count.append(self.env.mission.step_count)
             self.min_dist.append(self.env.mission.min_dist)
             self.final_dist.append(self.env.mission.dist)
-            self.delta_v.append(self.env.mission.rocket.total_dv)
+            self.delta_v.append(self.env.mission.rocket.dv_sum)
             self.rewards.append(self.env.reward())
             if len(self.rewards) >= 100:
                 self.rewards_avg.append(np.mean(self.rewards[-100:]))

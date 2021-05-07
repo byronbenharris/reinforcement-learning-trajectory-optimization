@@ -7,7 +7,7 @@ import random
 
 from keras import Sequential
 from keras.layers import Dense
-from keras.activations import relu, linear
+from keras.activations import relu, softmax
 from keras.optimizers import Adam
 from keras.losses import mean_squared_error
 
@@ -42,7 +42,9 @@ class DQN:
     def initialize_model(self):
         model = Sequential()
         model.add(Dense(64, input_dim=self.num_observation_space, activation=relu))
-        model.add(Dense(self.num_action_space))
+        model.add(Dense(128, activation=relu))
+        model.add(Dense(64, activation=relu))
+        model.add(Dense(self.num_action_space, activation=softmax))
         model.compile(loss=mean_squared_error, optimizer=Adam(lr=self.lr))
         print(model.summary())
         return model
