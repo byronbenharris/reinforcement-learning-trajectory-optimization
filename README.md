@@ -3,7 +3,7 @@
 ## Overview
 
 This code implements Deep Reinforcement Learning as a technique for solving
-2D Transfer Orbits. Motion is modeled by a 4th Order Runga-Kutta.
+2D Transfer Orbits. Motion is modeled by a 4th Order Runge-Kutta.
 TF-Agents is used to implement the RL components.
 
 The code is all contained within the `/code/` subdirectory. More specifically:
